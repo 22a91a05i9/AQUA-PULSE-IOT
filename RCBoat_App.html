@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>RC Boat Controller</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050a12;
+  --panel:#0b1420;
+  --panel2:#0f1e30;
+  --border:rgba(0,200,255,0.15);
+  --border2:rgba(0,200,255,0.3);
+  --cyan:#00c8ff;
+  --green:#00ff88;
+  --orange:#ff6b00;
+  --red:#ff2b2b;
+  --yellow:#ffe030;
+  --text:#e8f4ff;
+  --muted:#4a6a8a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  display:flex;flex-direction:column;
+  align-items:center;
+  position:fixed;inset:0;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,200,255,0.025) 1px,transparent 1px);
+  background-size:36px 36px;
+  pointer-events:none;z-index:0;
+}
+
+/* ══ CONNECT SCREEN ══ */
+#scr-con{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:16px;z-index:100;
+  background:var(--bg);padding:28px;
+}
+.brand{
+  font-family:'Orbitron',monospace;
+  font-size:32px;font-weight:900;
+  letter-spacing:5px;color:var(--cyan);
+  text-shadow:0 0 30px rgba(0,200,255,0.5);
+}
+.brand span{color:var(--text);}
+.boat-ani{
+  font-size:68px;
+  animation:bob 2.5s ease-in-out infinite;
+  filter:drop-shadow(0 0 18px rgba(0,200,255,0.4));
+}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-12px) rotate(3deg);}}
+.sub{font-size:13px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.con-btn{
+  background:transparent;
+  border:2px solid var(--cyan);
+  color:var(--cyan);
+  font-family:'Orbitron',monospace;
+  font-size:14px;font-weight:700;
+  letter-spacing:3px;padding:15px 36px;
+  border-radius:6px;cursor:pointer;
+  text-transform:uppercase;
+  transition:all 0.2s;
+  box-shadow:0 0 20px rgba(0,200,255,0.15);
+}
+.con-btn:active{background:var(--cyan);color:var(--bg);}
+.badge{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);letter-spacing:1px;}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.dot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;}
+.dot.warn{background:var(--yellow);animation:pulse 0.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
+.hint{font-size:11px;color:var(--muted);text-align:center;line-height:1.9;max-width:280px;}
+
+/* ══ CONTROLLER ══ */
+#scr-ctrl{
+  display:none;width:100%;height:100%;
+  flex-direction:column;z-index:1;
+  max-width:480px;
+}
+#scr-ctrl.show{display:flex;}
+
+/* Top bar */
+.topbar{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  padding:10px 14px;
+  border-bottom:0.5px solid var(--border);
+  flex-shrink:0;background:var(--panel);
+}
+.top-logo{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--cyan);letter-spacing:2px;}
+.top-right{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
+
+/* Status chips */
+.chips{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:6px;padding:8px 10px;flex-shrink:0;
+}
+.chip{
+  background:var(--panel);
+  border:0.5px solid var(--border);
+  border-radius:8px;padding:7px 10px;
+}
+.chip-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
+.chip-val{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--text);}
+.chip-val.c{color:var(--cyan);}
+.chip-val.g{color:var(--green);}
+.chip-val.o{color:var(--orange);}
+
+/* Speed bar */
+.spd-wrap{padding:0 10px 6px;flex-shrink:0;}
+.spd-panel{background:var(--panel);border:0.5px solid var(--border);border-radius:10px;padding:10px 14px;}
+.spd-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.spd-lbl{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.spd-num{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--cyan);}
+.spd-track{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-bottom:8px;}
+.spd-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#00c8ff,#00ffea);transition:width 0.15s;}
+.spd-fill.rev{background:linear-gradient(90deg,#ff2b2b,#ff6b6b);}
+.spd-btns{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
+.spd-btn{
+  background:var(--panel2);border:0.5px solid var(--border);
+  border-radius:6px;padding:8px 4px;
+  font-family:'Orbitron',monospace;font-size:11px;
+  font-weight:700;color:var(--muted);
+  cursor:pointer;text-align:center;
+  transition:all 0.12s;
+}
+.spd-btn:active,.spd-btn.active{
+  background:rgba(0,200,255,0.15);
+  border-color:var(--cyan);color:var(--cyan);
+  box-shadow:0 0 8px rgba(0,200,255,0.3);
+}
+
+/* Main controls */
+.ctrl-area{
+  flex:1;display:flex;
+  gap:8px;padding:0 10px 6px;
+  min-height:0;
+}
+
+/* DPAD */
+.dpad-wrap{
+  flex:1;background:var(--panel);
+  border:0.5px solid var(--border);
+  border-radius:12px;padding:10px;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-template-rows:1fr 1fr 1fr;
+  gap:6px;
+}
+.dp{
+  background:var(--panel2);
+  border:0.5px solid var(--border);
+  border-radius:10px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;
+  transition:all 0.1s;
+  font-size:10px;color:var(--muted);
+  letter-spacing:1px;text-transform:uppercase;
+  min-height:0;
+}
+.dp .ic{font-size:22px;line-height:1;}
+.dp:active,.dp.pr{transform:scale(0.93);}
+.dp.fwd:active,.dp.fwd.pr{background:rgba(0,255,136,0.15);border-color:var(--green);color:var(--green);}
+.dp.rev:active,.dp.rev.pr{background:rgba(255,107,0,0.12);border-color:var(--orange);color:var(--orange);}
+.dp.lft:active,.dp.lft.pr{background:rgba(0,200,255,0.12);border-color:var(--cyan);color:var(--cyan);}
+.dp.rgt:active,.dp.rgt.pr{background:rgba(0,200,255,0.12);border-color:var(--cyan);color:var(--cyan);}
+.dp.stp{border-color:rgba(255,43,43,0.35);background:rgba(255,43,43,0.05);}
+.dp.stp .ic{color:var(--red);}
+.dp.stp:active{background:rgba(255,43,43,0.18);box-shadow:0 0 14px rgba(255,43,43,0.4);}
+.dp.ctr:active{background:rgba(0,200,255,0.08);border-color:var(--border2);}
+.dp-empty{background:transparent;border:none;}
+
+/* Right side extra buttons */
+.side-btns{
+  width:76px;display:flex;
+  flex-direction:column;gap:6px;
+}
+.side-btn{
+  flex:1;background:var(--panel);
+  border:0.5px solid var(--border);
+  border-radius:10px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:3px;cursor:pointer;
+  font-size:10px;color:var(--muted);
+  letter-spacing:0.5px;text-transform:uppercase;
+  transition:all 0.12s;
+}
+.side-btn .ic{font-size:20px;line-height:1;}
+.side-btn:active{transform:scale(0.94);}
+.side-btn.sl:active{background:rgba(0,255,136,0.1);border-color:var(--green);color:var(--green);}
+.side-btn.fl:active{background:rgba(0,200,255,0.1);border-color:var(--cyan);color:var(--cyan);}
+.side-btn.dc{border-color:rgba(255,43,43,0.3);}
+.side-btn.dc:active{background:rgba(255,43,43,0.1);color:var(--red);}
+
+/* Log bar */
+.logbar{
+  height:24px;background:var(--panel);
+  border-top:0.5px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 12px;gap:8px;flex-shrink:0;
+}
+.log-tag{font-size:9px;color:var(--cyan);font-family:'Orbitron',monospace;letter-spacing:2px;flex-shrink:0;}
+.log-txt{font-size:11px;color:var(--muted);font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* Toast */
+.toast{
+  position:fixed;top:56px;left:50%;
+  transform:translateX(-50%) translateY(-16px);
+  background:var(--panel2);
+  border:0.5px solid var(--cyan);
+  color:var(--cyan);
+  font-family:'Orbitron',monospace;
+  font-size:11px;letter-spacing:2px;
+  padding:9px 18px;border-radius:4px;
+  opacity:0;transition:opacity 0.25s,transform 0.25s;
+  z-index:999;pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- ══ CONNECT SCREEN ══ -->
+<div id="scr-con">
+  <div class="brand">RC<span>BOAT</span></div>
+  <div class="boat-ani">⛵</div>
+  <div class="sub">Bluetooth Marine Controller</div>
+  <button class="con-btn" id="btn-con" onclick="connectBT()">
+    Connect to Boat
+  </button>
+  <div class="badge">
+    <div class="dot" id="dot-c"></div>
+    <span id="lbl-c">AWAITING CONNECTION</span>
+  </div>
+  <div class="hint">
+    1. Power on Arduino + battery<br>
+    2. Pair HC-05 in Android Bluetooth Settings<br>
+    PIN: <strong style="color:var(--text)">1234</strong><br>
+    3. Open in <strong style="color:var(--text)">Chrome Android</strong> and connect
+  </div>
+</div>
+
+<!-- ══ CONTROLLER SCREEN ══ -->
+<div id="scr-ctrl">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="top-logo">⛵ RCBOAT</div>
+    <div class="top-right">
+      <div class="dot on"></div>
+      <span id="lbl-dev">HC-05</span>
+    </div>
+  </div>
+
+  <!-- Status chips -->
+  <div class="chips">
+    <div class="chip">
+      <div class="chip-lbl">Motor</div>
+      <div class="chip-val g" id="ch-motor">IDLE</div>
+    </div>
+    <div class="chip">
+      <div class="chip-lbl">Steering</div>
+      <div class="chip-val c" id="ch-steer">CENTER</div>
+    </div>
+    <div class="chip">
+      <div class="chip-lbl">Speed</div>
+      <div class="chip-val o" id="ch-spd">0</div>
+    </div>
+  </div>
+
+  <!-- Speed buttons -->
+  <div class="spd-wrap">
+    <div class="spd-panel">
+      <div class="spd-top">
+        <span class="spd-lbl">⚡ Speed Level</span>
+        <span class="spd-num" id="spd-num">STOP</span>
+      </div>
+      <div class="spd-track">
+        <div class="spd-fill" id="spd-fill"></div>
+      </div>
+      <div class="spd-btns">
+        <div class="spd-btn" id="sb0" onclick="setSpeed(0)">STOP</div>
+        <div class="spd-btn" id="sb1" onclick="setSpeed(1)">1</div>
+        <div class="spd-btn" id="sb2" onclick="setSpeed(2)">2</div>
+        <div class="spd-btn" id="sb3" onclick="setSpeed(3)">3</div>
+        <div class="spd-btn" id="sb4" onclick="setSpeed(4)">4</div>
+        <div class="spd-btn" id="sb5" onclick="setSpeed(5)">MAX</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main controls -->
+  <div class="ctrl-area">
+
+    <!-- D-PAD -->
+    <div class="dpad-wrap">
+
+      <!-- Row 1 -->
+      <div class="dp-empty"></div>
+      <div class="dp fwd" id="dp-fwd"
+        ontouchstart="pressDp('F','dp-fwd','FWD')"
+        ontouchend="releaseDp('dp-fwd')"
+        onmousedown="pressDp('F','dp-fwd','FWD')"
+        onmouseup="releaseDp('dp-fwd')">
+        <span class="ic">▲</span>
+        <span>FWD</span>
+      </div>
+      <div class="dp-empty"></div>
+
+      <!-- Row 2 -->
+      <div class="dp lft" id="dp-lft"
+        ontouchstart="pressDp('L','dp-lft','LEFT')"
+        ontouchend="releaseSt('dp-lft')"
+        onmousedown="pressDp('L','dp-lft','LEFT')"
+        onmouseup="releaseSt('dp-lft')">
+        <span class="ic">◀</span>
+        <span>LEFT</span>
+      </div>
+      <div class="dp stp" onclick="eStop()">
+        <span class="ic">🛑</span>
+        <span>STOP</span>
+      </div>
+      <div class="dp rgt" id="dp-rgt"
+        ontouchstart="pressDp('R','dp-rgt','RIGHT')"
+        ontouchend="releaseSt('dp-rgt')"
+        onmousedown="pressDp('R','dp-rgt','RIGHT')"
+        onmouseup="releaseSt('dp-rgt')">
+        <span class="ic">▶</span>
+        <span>RIGHT</span>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="dp-empty"></div>
+      <div class="dp rev" id="dp-rev"
+        ontouchstart="pressDp('B','dp-rev','REV')"
+        ontouchend="releaseDp('dp-rev')"
+        onmousedown="pressDp('B','dp-rev','REV')"
+        onmouseup="releaseDp('dp-rev')">
+        <span class="ic">▼</span>
+        <span>REV</span>
+      </div>
+      <div class="dp ctr" onclick="sendCmd('C')">
+        <span class="ic">🎯</span>
+        <span>CTR</span>
+      </div>
+
+    </div>
+
+    <!-- Side buttons -->
+    <div class="side-btns">
+      <div class="side-btn sl"
+        ontouchstart="pressDp('f','','SLOW')"
+        ontouchend="releaseDp('')"
+        onmousedown="pressDp('f','','SLOW')"
+        onmouseup="releaseDp('')">
+        <span class="ic">🐢</span>
+        <span>SLOW</span>
+      </div>
+      <div class="side-btn fl"
+        ontouchstart="pressDp('F','','FULL')"
+        ontouchend="releaseDp('')"
+        onmousedown="pressDp('F','','FULL')"
+        onmouseup="releaseDp('')">
+        <span class="ic">🚀</span>
+        <span>FULL</span>
+      </div>
+      <div class="side-btn"
+        ontouchstart="pressDp('b','','REV SLW')"
+        ontouchend="releaseDp('')"
+        onmousedown="pressDp('b','','REV SLW')"
+        onmouseup="releaseDp('')">
+        <span class="ic">🔄</span>
+        <span>REV SLW</span>
+      </div>
+      <div class="side-btn dc" onclick="disconnectBT()">
+        <span class="ic">✕</span>
+        <span>DISCON</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Log bar -->
+  <div class="logbar">
+    <span class="log-tag">TX</span>
+    <span class="log-txt" id="logt">system ready — waiting for commands</span>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ─────────────────────────
+let btDevice = null;
+let btChar   = null;
+let holdTimer = null;
+
+// ── Toast ──────────────────────────
+function toast(msg, dur=2000) {
+  const e = document.getElementById('toast');
+  e.textContent = msg;
+  e.classList.add('show');
+  setTimeout(() => e.classList.remove('show'), dur);
+}
+
+// ── Log ────────────────────────────
+function log(m) {
+  document.getElementById('logt').textContent = m;
+}
+
+// ── Bluetooth Connect ──────────────
+async function connectBT() {
+  if (!navigator.bluetooth) {
+    alert(
+      'Web Bluetooth not supported!\n\n' +
+      'Android: Use Chrome browser\n' +
+      'iOS: Download "Bluefy" app from App Store\n\n' +
+      'Make sure HC-05 is paired in Bluetooth Settings first!'
+    );
+    return;
+  }
+  const dot = document.getElementById('dot-c');
+  const lbl = document.getElementById('lbl-c');
+  const btn = document.getElementById('btn-con');
+  dot.className = 'dot warn';
+  lbl.textContent = 'SCANNING...';
+  btn.textContent = 'Connecting...';
+
+  try {
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters: [
+        { name: 'HC-05' },
+        { name: 'HC05'  },
+        { namePrefix: 'HC' },
+        { namePrefix: 'BT' }
+      ],
+      optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+    });
+
+    btDevice.addEventListener('gattserverdisconnected', onDiscon);
+
+    const server  = await btDevice.gatt.connect();
+    const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+    btChar = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+
+    // Show controller
+    document.getElementById('scr-con').style.display = 'none';
+    document.getElementById('scr-ctrl').classList.add('show');
+    document.getElementById('lbl-dev').textContent = btDevice.name || 'HC-05';
+    toast('🚤 BOAT CONNECTED!');
+    log('connected → ' + (btDevice.name || 'HC-05'));
+
+  } catch(e) {
+    dot.className = 'dot';
+    lbl.textContent = 'FAILED — TRY AGAIN';
+    btn.textContent = 'Connect to Boat';
+    log('Error: ' + e.message);
+  }
+}
+
+function onDiscon() {
+  btChar = null;
+  document.getElementById('scr-ctrl').classList.remove('show');
+  document.getElementById('scr-con').style.display = 'flex';
+  document.getElementById('dot-c').className = 'dot';
+  document.getElementById('lbl-c').textContent = 'DISCONNECTED';
+  document.getElementById('btn-con').textContent = 'Connect to Boat';
+  toast('CONNECTION LOST');
+}
+
+function disconnectBT() {
+  sendCmd('S');
+  setTimeout(() => {
+    if (btDevice && btDevice.gatt.connected)
+      btDevice.gatt.disconnect();
+  }, 300);
+}
+
+// ── Send Command ───────────────────
+async function sendCmd(cmd) {
+  if (!btChar) { log('not connected!'); return; }
+  try {
+    await btChar.writeValue(new TextEncoder().encode(cmd + '\n'));
+    log('sent → "' + cmd + '"');
+  } catch(e) {
+    log('error: ' + e.message);
+  }
+}
+
+// ── D-Pad Press/Release ────────────
+function pressDp(cmd, id, label) {
+  if (id) document.getElementById(id).classList.add('pr');
+  sendCmd(cmd);
+  document.getElementById('ch-motor').textContent = label;
+  if (cmd === 'L') document.getElementById('ch-steer').textContent = 'LEFT';
+  if (cmd === 'R') document.getElementById('ch-steer').textContent = 'RIGHT';
+  holdTimer = setInterval(() => sendCmd(cmd), 250);
+}
+
+function releaseDp(id) {
+  clearInterval(holdTimer);
+  if (id) document.getElementById(id).classList.remove('pr');
+  sendCmd('S');
+  document.getElementById('ch-motor').textContent = 'IDLE';
+}
+
+function releaseSt(id) {
+  clearInterval(holdTimer);
+  if (id) document.getElementById(id).classList.remove('pr');
+  sendCmd('C');
+  document.getElementById('ch-steer').textContent = 'CENTER';
+}
+
+// ── Speed Buttons ──────────────────
+function setSpeed(level) {
+  // clear all active
+  for(let i=0;i<=5;i++) {
+    document.getElementById('sb'+i).classList.remove('active');
+  }
+  document.getElementById('sb'+level).classList.add('active');
+
+  const cmds   = ['0','1','2','3','4','9'];
+  const labels = ['STOP','SPD 1','SPD 2','SPD 3','SPD 4','MAX'];
+  const pcts   = [0, 17, 34, 50, 67, 100];
+
+  sendCmd(cmds[level]);
+  document.getElementById('spd-num').textContent  = labels[level];
+  document.getElementById('spd-fill').style.width = pcts[level] + '%';
+  document.getElementById('ch-spd').textContent   = level === 0 ? '0' : level === 5 ? 'MAX' : level;
+
+  if (level === 0) {
+    document.getElementById('ch-motor').textContent = 'IDLE';
+  } else {
+    document.getElementById('ch-motor').textContent = 'FWD';
+  }
+}
+
+// ── Emergency Stop ─────────────────
+function eStop() {
+  clearInterval(holdTimer);
+  sendCmd('S');
+  sendCmd('C');
+  document.getElementById('ch-motor').textContent = 'STOP';
+  document.getElementById('ch-steer').textContent = 'CENTER';
+  document.getElementById('ch-spd').textContent   = '0';
+  document.getElementById('spd-num').textContent  = 'STOP';
+  document.getElementById('spd-fill').style.width = '0%';
+  for(let i=0;i<=5;i++) document.getElementById('sb'+i).classList.remove('active');
+  document.getElementById('sb0').classList.add('active');
+  toast('🛑 EMERGENCY STOP!');
+  ['dp-fwd','dp-rev','dp-lft','dp-rgt'].forEach(id => {
+    document.getElementById(id).classList.remove('pr');
+  });
+}
+</script>
+</body>
+</html>
