@@ -106,16 +106,9 @@ To deploy the AQUA-PULSE firmware locally, follow these steps:
 
 ---
 
-## 🤝 Contributing
+## 👥 Contributors
 
-Contributions make the open-source community an incredible place to learn, inspire, and create. Any modifications or feature extensions you make are highly appreciated.
+This project exists thanks to the efforts of:
 
-1. Fork the Project.
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the Branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
-
-```
-
-```
+* **[Harisesha Sai](https://github.com/harisesha0205-pixel)** - Core Firmware & IoT Architecture.
+* **[Lokanadham Jyoshnavi](https://github.com/22a91a05i9/)** - Mobile App Development & Documentation.
