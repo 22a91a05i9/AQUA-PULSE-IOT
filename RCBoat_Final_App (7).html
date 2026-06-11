@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>RC Boat</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1a;color:#e8f4ff;font-family:Arial,sans-serif;}
+body{display:flex;flex-direction:column;align-items:center;position:fixed;inset:0;}
+
+/* CONNECT */
+#con{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:16px;background:#0a0f1a;padding:28px;}
+.brand{font-size:28px;font-weight:900;color:#00c8ff;letter-spacing:3px;}
+.brand b{color:#fff;}
+.boat{font-size:64px;animation:bob 2s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+#btn-con{background:transparent;border:2px solid #00c8ff;color:#00c8ff;
+  font-size:14px;font-weight:700;letter-spacing:2px;padding:13px 32px;
+  border-radius:8px;cursor:pointer;}
+#btn-con:active{background:#00c8ff;color:#0a0f1a;}
+.badge{display:flex;align-items:center;gap:8px;font-size:12px;color:#4a6a8a;}
+.dot{width:9px;height:9px;border-radius:50%;background:#4a6a8a;flex-shrink:0;}
+.dot.g{background:#00ff88;box-shadow:0 0 6px #00ff88;animation:pu 1.5s infinite;}
+.dot.y{background:#ffe030;animation:pu .5s infinite;}
+@keyframes pu{0%,100%{opacity:1;}50%{opacity:.2;}}
+.hint{font-size:11px;color:#4a6a8a;text-align:center;line-height:2;}
+
+/* CONTROLLER */
+#ctrl{display:none;width:100%;height:100%;flex-direction:column;max-width:460px;}
+#ctrl.on{display:flex;}
+.top{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 13px;background:#0d1828;border-bottom:1px solid rgba(0,200,255,.15);flex-shrink:0;}
+.tl{font-size:15px;font-weight:900;color:#00c8ff;letter-spacing:2px;}
+.tr{display:flex;align-items:center;gap:6px;font-size:11px;color:#4a6a8a;}
+
+/* STATUS */
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:7px 9px;flex-shrink:0;}
+.chip{background:#0d1828;border:1px solid rgba(0,200,255,.12);border-radius:7px;padding:6px 9px;}
+.cl{font-size:8px;color:#4a6a8a;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
+.cv{font-size:14px;font-weight:700;}
+
+/* DEBUG LOG — shows exactly what is being sent */
+.dbg{background:#0d1828;border:1px solid rgba(0,255,0,.2);border-radius:8px;
+  margin:0 9px 7px;padding:8px 12px;flex-shrink:0;}
+.dbg-title{font-size:9px;color:#00ff88;letter-spacing:2px;margin-bottom:4px;}
+.dbg-line{font-size:12px;color:#00ff88;font-family:monospace;}
+
+/* SPEED */
+.panel{background:#0d1828;border:1px solid rgba(0,200,255,.12);
+  border-radius:9px;margin:0 9px 7px;padding:10px 12px;flex-shrink:0;}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.pl{font-size:9px;color:#4a6a8a;letter-spacing:2px;text-transform:uppercase;}
+.pv{font-size:18px;font-weight:900;color:#00c8ff;}
+.bar{height:7px;background:#162030;border-radius:4px;overflow:hidden;margin-bottom:7px;}
+.fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#00c8ff,#00ffea);width:0%;transition:width .15s;}
+.sbtns{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+.spdbtn{background:#162030;border:1px solid rgba(0,200,255,.12);border-radius:5px;
+  padding:8px 2px;font-size:10px;font-weight:700;color:#4a6a8a;cursor:pointer;text-align:center;}
+.spdbtn.on{background:rgba(0,200,255,.15);border-color:#00c8ff;color:#00c8ff;}
+.spdbtn:active{transform:scale(.92);}
+
+/* STEERING */
+.st3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:0;}
+.stbtn{background:#162030;border:1px solid rgba(0,200,255,.12);border-radius:9px;
+  padding:11px 4px;cursor:pointer;text-align:center;transition:all .12s;}
+.stbtn:active{transform:scale(.92);}
+.stbtn .ic{font-size:19px;display:block;}
+.stbtn .lb{font-size:9px;color:#4a6a8a;margin-top:3px;display:block;}
+.stbtn.L:active,.stbtn.L.on{background:rgba(0,200,255,.15);border-color:#00c8ff;}
+.stbtn.L.on .lb{color:#00c8ff;}
+.stbtn.C:active,.stbtn.C.on{background:rgba(0,255,136,.15);border-color:#00ff88;}
+.stbtn.C.on .lb{color:#00ff88;}
+.stbtn.R:active,.stbtn.R.on{background:rgba(0,200,255,.15);border-color:#00c8ff;}
+.stbtn.R.on .lb{color:#00c8ff;}
+
+/* DPAD */
+.mid{flex:1;display:flex;gap:7px;padding:0 9px 7px;min-height:0;}
+.dpad{flex:1;background:#0d1828;border:1px solid rgba(0,200,255,.12);
+  border-radius:11px;padding:7px;display:grid;
+  grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:5px;}
+.dp{background:#162030;border:1px solid rgba(0,200,255,.12);border-radius:9px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;cursor:pointer;font-size:9px;color:#4a6a8a;letter-spacing:1px;
+  text-transform:uppercase;min-height:0;transition:all .1s;}
+.dp .ic{font-size:19px;line-height:1;}
+.dp:active,.dp.pr{transform:scale(.92);}
+.dp.fw:active,.dp.fw.pr{background:rgba(0,255,136,.15);border-color:#00ff88;color:#00ff88;}
+.dp.rv:active,.dp.rv.pr{background:rgba(255,107,0,.12);border-color:#ff6b00;color:#ff6b00;}
+.dp.lf:active,.dp.lf.pr{background:rgba(0,200,255,.15);border-color:#00c8ff;color:#00c8ff;}
+.dp.rg:active,.dp.rg.pr{background:rgba(0,200,255,.15);border-color:#00c8ff;color:#00c8ff;}
+.dp.es{border-color:rgba(255,43,43,.35);background:rgba(255,43,43,.05);}
+.dp.es:active{background:rgba(255,43,43,.2);}
+.dp.ct:active{background:rgba(0,200,255,.08);}
+.dp-e{background:transparent;border:none;}
+.side{width:68px;display:flex;flex-direction:column;gap:5px;}
+.si{flex:1;background:#0d1828;border:1px solid rgba(0,200,255,.12);border-radius:9px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;cursor:pointer;font-size:9px;color:#4a6a8a;transition:all .12s;}
+.si .ic{font-size:17px;}
+.si:active{transform:scale(.93);}
+.si.a:active{background:rgba(0,255,136,.1);border-color:#00ff88;color:#00ff88;}
+.si.b:active{background:rgba(0,200,255,.1);border-color:#00c8ff;color:#00c8ff;}
+.si.c:active{background:rgba(255,107,0,.1);border-color:#ff6b00;color:#ff6b00;}
+.si.d{border-color:rgba(255,43,43,.25);}
+.si.d:active{background:rgba(255,43,43,.1);color:#ff2b2b;}
+
+/* LOG */
+.log{height:22px;background:#0d1828;border-top:1px solid rgba(0,200,255,.1);
+  display:flex;align-items:center;padding:0 11px;gap:7px;flex-shrink:0;}
+.ltg{font-size:8px;color:#00c8ff;letter-spacing:2px;flex-shrink:0;}
+.lmg{font-size:10px;color:#4a6a8a;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.toast{position:fixed;top:52px;left:50%;transform:translateX(-50%) translateY(-14px);
+  background:#0d1828;border:1px solid #00c8ff;color:#00c8ff;font-size:11px;
+  letter-spacing:2px;padding:7px 16px;border-radius:5px;opacity:0;
+  transition:opacity .2s,transform .2s;z-index:999;pointer-events:none;white-space:nowrap;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- CONNECT -->
+<div id="con">
+  <div class="brand">RC<b>BOAT</b></div>
+  <div class="boat">⛵</div>
+  <button id="btn-con" onclick="doConnect()">CONNECT HC-05</button>
+  <div class="badge">
+    <div class="dot" id="led"></div>
+    <span id="clbl">DISCONNECTED</span>
+  </div>
+  <div class="hint">
+    Pair HC-05 in Bluetooth Settings • PIN: <b style="color:#fff">1234</b><br>
+    Open in Chrome Android
+  </div>
+</div>
+
+<!-- CONTROLLER -->
+<div id="ctrl">
+  <div class="top">
+    <div class="tl">⛵ RCBOAT</div>
+    <div class="tr"><div class="dot g"></div><span id="dname">HC-05</span></div>
+  </div>
+
+  <div class="chips">
+    <div class="chip"><div class="cl">Motor</div><div class="cv" id="cm" style="color:#00c8ff">IDLE</div></div>
+    <div class="chip"><div class="cl">Steering</div><div class="cv" id="cs">CTR</div></div>
+    <div class="chip"><div class="cl">Speed</div><div class="cv" id="cspd" style="color:#ff6b00">STOP</div></div>
+  </div>
+
+  <!-- DEBUG — shows exactly what command is being sent -->
+  <div class="dbg">
+    <div class="dbg-title">LAST COMMAND SENT</div>
+    <div class="dbg-line" id="dbg">waiting...</div>
+  </div>
+
+  <!-- SPEED -->
+  <div class="panel">
+    <div class="ph"><span class="pl">⚡ SPEED</span><span class="pv" id="sv">STOP</span></div>
+    <div class="bar"><div class="fill" id="bf"></div></div>
+    <div class="sbtns">
+      <div class="spdbtn on" id="s0" onclick="setSpd(0)">STOP</div>
+      <div class="spdbtn" id="s1" onclick="setSpd(1)">1</div>
+      <div class="spdbtn" id="s2" onclick="setSpd(2)">2</div>
+      <div class="spdbtn" id="s3" onclick="setSpd(3)">3</div>
+      <div class="spdbtn" id="s4" onclick="setSpd(4)">4</div>
+      <div class="spdbtn" id="s5" onclick="setSpd(5)" style="color:#ff6b00">MAX</div>
+    </div>
+  </div>
+
+  <!-- STEERING — Q=LEFT E=RIGHT Z=CENTER -->
+  <div class="panel">
+    <div class="ph"><span class="pl">🎯 STEERING</span><span class="pv" id="sv2" style="font-size:13px">CENTER</span></div>
+    <div class="st3">
+      <div class="stbtn L" id="stL"
+        ontouchstart="steerOn('Q')" ontouchend="steerOff()"
+        onmousedown="steerOn('Q')" onmouseup="steerOff()">
+        <span class="ic">◀</span><span class="lb">LEFT 55°<br>sends: Q</span>
+      </div>
+      <div class="stbtn C on" id="stC" onclick="steerOn('Z');steerOff()">
+        <span class="ic">●</span><span class="lb">CTR 90°<br>sends: Z</span>
+      </div>
+      <div class="stbtn R" id="stR"
+        ontouchstart="steerOn('E')" ontouchend="steerOff()"
+        onmousedown="steerOn('E')" onmouseup="steerOff()">
+        <span class="ic">▶</span><span class="lb">RIGHT 125°<br>sends: E</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DPAD + SIDE -->
+  <div class="mid">
+    <div class="dpad">
+      <div class="dp-e"></div>
+      <!-- FWD sends F -->
+      <div class="dp fw" id="dpF"
+        ontouchstart="motorOn('F','dpF','FWD')" ontouchend="motorOff('dpF')"
+        onmousedown="motorOn('F','dpF','FWD')" onmouseup="motorOff('dpF')">
+        <span class="ic">▲</span><span>FWD[F]</span>
+      </div>
+      <div class="dp-e"></div>
+
+      <!-- LEFT sends Q -->
+      <div class="dp lf" id="dpL"
+        ontouchstart="steerOn('Q')" ontouchend="steerOff()"
+        onmousedown="steerOn('Q')" onmouseup="steerOff()">
+        <span class="ic">◀</span><span>L[Q]</span>
+      </div>
+      <div class="dp es" onclick="eStop()">
+        <span class="ic" style="color:#ff2b2b">🛑</span><span>STOP</span>
+      </div>
+      <!-- RIGHT sends E -->
+      <div class="dp rg" id="dpR"
+        ontouchstart="steerOn('E')" ontouchend="steerOff()"
+        onmousedown="steerOn('E')" onmouseup="steerOff()">
+        <span class="ic">▶</span><span>R[E]</span>
+      </div>
+
+      <div class="dp-e"></div>
+      <!-- REV sends B -->
+      <div class="dp rv" id="dpB"
+        ontouchstart="motorOn('B','dpB','REV')" ontouchend="motorOff('dpB')"
+        onmousedown="motorOn('B','dpB','REV')" onmouseup="motorOff('dpB')">
+        <span class="ic">▼</span><span>REV[B]</span>
+      </div>
+      <!-- CTR sends Z -->
+      <div class="dp ct" onclick="steerOn('Z');steerOff()">
+        <span class="ic">🎯</span><span>C[Z]</span>
+      </div>
+    </div>
+
+    <div class="side">
+      <!-- SLOW sends f -->
+      <div class="si a"
+        ontouchstart="motorOn('G','','SLOW')" ontouchend="motorOff('')"
+        onmousedown="motorOn('G','','SLOW')" onmouseup="motorOff('')">
+        <span class="ic">🐢</span><span>SLW[f]</span>
+      </div>
+      <!-- FULL sends F -->
+      <div class="si b"
+        ontouchstart="motorOn('F','','FULL')" ontouchend="motorOff('')"
+        onmousedown="motorOn('F','','FULL')" onmouseup="motorOff('')">
+        <span class="ic">🚀</span><span>FUL[F]</span>
+      </div>
+      <!-- REV SLOW sends b -->
+      <div class="si c"
+        ontouchstart="motorOn('H','','REVS')" ontouchend="motorOff('')"
+        onmousedown="motorOn('H','','REVS')" onmouseup="motorOff('')">
+        <span class="ic">🔄</span><span>RS[b]</span>
+      </div>
+      <div class="si d" onclick="doDisc()">
+        <span class="ic">✕</span><span>DISC</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="log">
+    <span class="ltg">TX</span>
+    <span class="lmg" id="lm">ready</span>
+  </div>
+</div>
+
+<div class="toast" id="tst"></div>
+
+<script>
+let dev=null,ch=null,mt=null,tt=null;
+
+function toast(m,d=2200){
+  const e=document.getElementById('tst');
+  e.textContent=m;e.classList.add('on');
+  if(tt)clearTimeout(tt);
+  tt=setTimeout(()=>e.classList.remove('on'),d);
+}
+function lg(m){document.getElementById('lm').textContent=m;}
+function dbg(m){document.getElementById('dbg').textContent=m;}
+
+async function doConnect(){
+  if(!navigator.bluetooth){alert('Open in Chrome on Android!');return;}
+  document.getElementById('led').className='dot y';
+  document.getElementById('clbl').textContent='SCANNING...';
+  document.getElementById('btn-con').textContent='Connecting...';
+  try{
+    dev=await navigator.bluetooth.requestDevice({
+      filters:[{name:'HC-05'},{name:'HC05'},{namePrefix:'HC'},{namePrefix:'BT'}],
+      optionalServices:['0000ffe0-0000-1000-8000-00805f9b34fb']
+    });
+    dev.addEventListener('gattserverdisconnected',onDc);
+    const srv=await dev.gatt.connect();
+    const svc=await srv.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+    ch=await svc.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+    document.getElementById('con').style.display='none';
+    document.getElementById('ctrl').classList.add('on');
+    document.getElementById('dname').textContent=dev.name||'HC-05';
+    toast('BOAT CONNECTED!');
+    lg('connected');
+    dbg('connected — ready');
+  }catch(e){
+    document.getElementById('led').className='dot';
+    document.getElementById('clbl').textContent='FAILED — TRY AGAIN';
+    document.getElementById('btn-con').textContent='CONNECT HC-05';
+    lg(''+e.message);
+  }
+}
+
+function onDc(){
+  ch=null;
+  document.getElementById('ctrl').classList.remove('on');
+  document.getElementById('con').style.display='flex';
+  document.getElementById('led').className='dot';
+  document.getElementById('clbl').textContent='DISCONNECTED';
+  document.getElementById('btn-con').textContent='CONNECT HC-05';
+  toast('CONNECTION LOST');
+}
+function doDisc(){tx('S');setTimeout(()=>{if(dev&&dev.gatt.connected)dev.gatt.disconnect();},300);}
+
+async function tx(cmd){
+  if(!ch){lg('not connected!');return;}
+  try{
+    await ch.writeValue(new TextEncoder().encode(cmd+'\n'));
+    lg('sent: '+cmd);
+    dbg('SENT → "' + cmd + '"');
+  }catch(e){lg('err:'+e.message);}
+}
+
+// MOTOR — hold repeat timer
+function motorOn(cmd,id,lbl){
+  if(id&&document.getElementById(id))document.getElementById(id).classList.add('pr');
+  tx(cmd);
+  document.getElementById('cm').textContent=lbl;
+  clearInterval(mt);
+  mt=setInterval(()=>tx(cmd),300);
+}
+function motorOff(id){
+  clearInterval(mt);mt=null;
+  if(id&&document.getElementById(id))document.getElementById(id).classList.remove('pr');
+  tx('S');
+  document.getElementById('cm').textContent='IDLE';
+}
+
+// STEERING — sends ONCE only, auto centers on release
+function steerOn(cmd){
+  tx(cmd);
+  if(cmd==='Q'){
+    document.getElementById('cs').textContent='LEFT';
+    document.getElementById('sv2').textContent='◀ LEFT 55°';
+    document.getElementById('stL').classList.add('on');
+    document.getElementById('stC').classList.remove('on');
+    document.getElementById('stR').classList.remove('on');
+  }else if(cmd==='E'){
+    document.getElementById('cs').textContent='RIGHT';
+    document.getElementById('sv2').textContent='▶ RIGHT 125°';
+    document.getElementById('stR').classList.add('on');
+    document.getElementById('stC').classList.remove('on');
+    document.getElementById('stL').classList.remove('on');
+  }else{
+    document.getElementById('cs').textContent='CTR';
+    document.getElementById('sv2').textContent='● CTR 90°';
+    document.getElementById('stC').classList.add('on');
+    document.getElementById('stL').classList.remove('on');
+    document.getElementById('stR').classList.remove('on');
+  }
+}
+function steerOff(){
+  tx('Z');
+  document.getElementById('cs').textContent='CTR';
+  document.getElementById('sv2').textContent='● CTR 90°';
+  document.getElementById('stC').classList.add('on');
+  document.getElementById('stL').classList.remove('on');
+  document.getElementById('stR').classList.remove('on');
+}
+
+// SPEED
+function setSpd(lvl){
+  const cmds=['0','1','2','3','4','9'];
+  const lbls=['STOP','SPD1','SPD2','SPD3','SPD4','MAX'];
+  const pcts=[0,20,40,60,80,100];
+  tx(cmds[lvl]);
+  for(let i=0;i<=5;i++)document.getElementById('s'+i).classList.toggle('on',i===lvl);
+  document.getElementById('sv').textContent=lbls[lvl];
+  document.getElementById('bf').style.width=pcts[lvl]+'%';
+  document.getElementById('cspd').textContent=lbls[lvl];
+  document.getElementById('cm').textContent=lvl===0?'IDLE':'FWD';
+}
+
+// EMERGENCY STOP
+function eStop(){
+  clearInterval(mt);mt=null;
+  tx('X');
+  document.getElementById('cm').textContent='STOP';
+  steerOff();
+  setSpd(0);
+  ['dpF','dpB','dpL','dpR'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('pr');});
+  toast('🛑 EMERGENCY STOP!');
+}
+</script>
+</body>
+</html>
